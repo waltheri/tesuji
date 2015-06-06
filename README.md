@@ -15,7 +15,7 @@ var Model = tesuji.Model;
 var Component = tesuji.Component;
 
 // create model class
-var MyModel = Model.extend(function(title, text){
+var MyModel = Model.extend(function(title, text) {
 	this.title = title;
 	this.text = text;
 });
@@ -30,7 +30,7 @@ var MyComponent = Component.fromHTML(require("./template.html"));
 
 // define main page model
 var pageModel = new Model({
-	content: new MyComponent(new myModel("Hello World", "This is example of tesuji.js web app."));
+	content: new MyComponent(new myModel("Hello World", "This is tesuji.js web app."));
 });
 
 // apply main model
@@ -61,3 +61,5 @@ File *index.html*:
   </body>
 </html>
 ```
+
+You can also check fully working [TodoMVC app](https://github.com/waltheri/tesuji-todomvc) written in tesuji.js.
