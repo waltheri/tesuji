@@ -1,20 +1,31 @@
 /* index.js */
 
-var Component = require("./Component");
+//var Component = require("./Component");
 
 var tesuji = {
-	Component: Component,
+	Component: require("./Component"),
 	Model: require("./Model"),
-	/*applyModel: function(rootElement, model) {
+	applyModel: function(rootElement, model, parentModel) {
 		// handle parameters
-		if(model == null) {
+		if(!(rootElement instanceof HTMLElement)) {
+			parentModel = model;
 			model = rootElement;
 			rootElement = document.body;
 		}
 		
-		var component = new Component.FixedComponent(rootElement);
-		component.setModel(model);
-	},*/
+		var component = rootElement.tesujiComponent;
+		if(component) {
+			component.parentModel = parentModel;
+			component.updateModel(model);
+		}
+		else {
+			component = new this.Component.FixedComponent(rootElement);
+			component.parentModel = parentModel;
+			component.setModel(model);
+		}
+		
+		return component;
+	},
 	Type: require("./utils/Type")
 }
 
