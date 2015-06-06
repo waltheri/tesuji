@@ -4,7 +4,7 @@
   "description": "Javascript MV* library with magical data bindings designed to be used with Webpack or Browserify.",
   "main": "src/tesuji.js",
   "scripts": {
-    "test": "test"
+    "test": "mocha"
   },
   "keywords": [
     "MVC", "MVVM"
@@ -16,5 +16,9 @@
     "mocha": "^2.2.4",
     "todomvc-app-css": "^2.0.1",
     "todomvc-common": "^1.0.2"
+  },
+  "repository": {
+    "type" : "git",
+	"url" : "https://github.com/waltheri/tesuji.git"
   }
 }
