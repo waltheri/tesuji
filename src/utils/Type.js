@@ -1,29 +1,20 @@
 /** Variables with reuired type */
 
+require("./functionNamePolyfill");
+
 var ConditionVariable = require("./ConditionVariable");
-
-var funcNameRegex = /function ([^\(]*)\(/;
-
-var getConstructorName = function(constructor) {
-	if(!constructor) return "[Unknown function]";
-	else if(constructor.name) return constructor.name;
-	else {
-		var match = type.toString().match(funcNameRegex);
-		return (match && match[1]) ? match[1] : "[Anonymous function]";
-	}
-}
 
 var Type = function(type, initialValue) {
 	ConditionVariable.call(this, initialValue == null ? new type() : initialValue);
 	this.type = type;
-	this.typeName = getConstructorName(type);
+	this.typeName = type.name;
 }
 
 Type.prototype = Object.create(ConditionVariable.prototype);
 Type.prototype.constructor = Type;
 Type.prototype.test = function(value, key) {
 	if(value.constructor != this.type) {
-		throw new TypeError("Value of the property '"+key+"' is expected to be '"+this.typeName+"', trying to assign instance of '"+getConstructorName(value.constructor)+"'.");
+		throw new TypeError("Value of the property '"+key+"' is expected to be '"+this.typeName+"', trying to assign instance of '"+value.constructor.name+"'.");
 	}
 	else return true;
 }
