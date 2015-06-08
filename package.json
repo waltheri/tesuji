@@ -1,13 +1,14 @@
 {
   "name": "tesuji",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Javascript MV* library with magical data bindings designed to be used with Webpack or Browserify.",
   "main": "src/tesuji.js",
   "scripts": {
     "test": "mocha"
   },
   "keywords": [
-    "MVC", "MVVM"
+    "MVC",
+    "MVVM"
   ],
   "author": "Jan Prokop <thebestgoplayer@gmail.com>",
   "license": "MIT",
@@ -16,7 +17,10 @@
     "mocha": "^2.2.4"
   },
   "repository": {
-    "type" : "git",
-	"url" : "https://github.com/waltheri/tesuji.git"
+    "type": "git",
+    "url": "https://github.com/waltheri/tesuji.git"
+  },
+  "dependencies": {
+    "path-to-regexp": "^1.2.0"
   }
 }
