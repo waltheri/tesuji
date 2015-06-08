@@ -11,6 +11,7 @@ var attributeHandlers = [
 	require("./CheckedAttribute"),
 	require("./EventsAttribute"),
 	require("./IfAttribute"),
+	require("./AttrAttribute"),
 ];
 
 module.exports = attributeHandlers;
