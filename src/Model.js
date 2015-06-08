@@ -71,10 +71,10 @@ var createPropertyDescriptor = function(obj, key, parent) {
 		return descriptor;
 	}
 	else if(obj[key] instanceof ModelArray) {
-		context.subscription = function() {
+		/*context.subscription = function() {
 			parent.notify(key, obj[key]);
 		}
-		obj[key].subscribe(context.subscription);
+		obj[key].subscribe(context.subscription);*/
 		
 		context.value = obj[key];
 	}
@@ -101,10 +101,10 @@ var createPropertyDescriptor = function(obj, key, parent) {
 			if(context.subscription) context.value.unsubscribe(context.subscription);
 			
 			if(new_val instanceof ModelArray) {
-				context.subscription = function() {
+				/*context.subscription = function() {
 					parent.notify(key, new_val);
 				}
-				new_val.subscribe(context.subscription);
+				new_val.subscribe(context.subscription);*/
 				
 				context.value = new_val;
 			}
@@ -193,18 +193,18 @@ for(var i = 0; i < arrayAlteringMethods.length; i++) {
 
 ModelArray.prototype.constructor = ModelArray;
 
+// registry of models
+Model.registry = {};
+
 Model.Array = ModelArray;
 Model.extend = function(constructor) {
-	var submodel = function() {
-		// call parent constructor
-		constructor.apply(this, arguments);
-		
-		// init the magic
-		Model.call(this, this);
-	}
+	var submodel = new Function("constructor", "Model", "return function "+constructor.name+"() { constructor.apply(this, arguments); Model.call(this, this); };")(constructor, Model);
 	
 	submodel.prototype = Object.create(Model.prototype);
 	submodel.prototype.constructor = submodel;
+	
+	if(constructor.name) Model.registry[constructor.name] = submodel;
+	
 	return submodel;
 }
 

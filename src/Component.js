@@ -109,13 +109,12 @@ var removeModelFromDOMElement = function(domElement) {
  * Represents some component of the web page. It is composed from HTML template and data model.
  */
  
-var Component = function() {
+var Component = function Component() {
 	this.parentElement = null;
-	//this.parentModel = null;
-	this.modelMap = [];
 	this.model = [];
 	this.templateNodes = [];
 	var parentModel = null;
+	
 	Object.defineProperty(this, "parentModel", {
 		get: function() {
 			return parentModel;
@@ -281,8 +280,11 @@ Component.prototype = {
 		
 		this.templateNodes.splice(from, 1);
 		this.templateNodes.splice(to, 0, templateNodes);
-	}
+	},
 	
+	__sleep: function() {
+		return ["model"];
+	}
 }
 
 /**
@@ -297,7 +299,7 @@ Component.prototype = {
  * Component objects contain method inject(?), which can be used to insert component into the DOM. And the component can be injected into any element any time.
  */
  
-var ImmutableComponent = function(model) {
+var ImmutableComponent = function ImmutableComponent(model) {
 	Component.call(this);
 	this.model = this.createModel(model);
 }
@@ -331,7 +333,7 @@ ImmutableComponent.prototype.inject = function(element) {
  * Also it has mutable model - it can be changed. On the other side instance is strictly binded to its parent DOM element.
  */
  
-var FixedComponent = function(parentElement) {
+var FixedComponent = function FixedComponent(parentElement) {
 	if(parentElement == null) throw new TypeError("Property 'parentElement' must not be null.");
 	
 	Component.call(this);
@@ -357,6 +359,8 @@ FixedComponent.prototype.setModel = function(model) {
 	this.applyModel();
 }
 
+// registry of components
+Component.registry = {};
 
 /**
  * Possible calls:
@@ -371,29 +375,22 @@ FixedComponent.prototype.setModel = function(model) {
  *    return Component class
  */
 
-Component.fromHTML = function(template) {
+Component.fromHTML = function(template, name) {
 	if(typeof template != "string") {
 		throw new TypeError("Function 'Component.fromHTML' argument must be type of 'string'.");
 	}
 	
 	// create a subclass of the Component
-	var NewComponent = function(model) {
-		ImmutableComponent.call(this, model);
-	}
+	name = name || "";
+	var NewComponent = new Function("ImmutableComponent", "return function "+name+"(model) { ImmutableComponent.call(this, model); };")(ImmutableComponent);
+
 	NewComponent.prototype = Object.create(ImmutableComponent.prototype);
-	NewComponent.constructor = NewComponent;
+	NewComponent.prototype.constructor = NewComponent;
 	
 	// save its template
 	NewComponent.prototype.template = template;
 	
-	/*// register component if it has name
-	if(typeof name == "string") {
-		NewComponent.prototype.name = name;
-		registeredComponents[name] = NewComponent;
-	}
-	
-	// save mapping function if any
-	if(typeof mappingFunction == "function") NewComponent.prototype.getModelFromAttributes = mappingFunction;*/
+	if(name) Component.registry[name] = NewComponent;
 	
 	return NewComponent;
 }
