@@ -12,17 +12,10 @@ var tesuji = {
 			model = rootElement;
 			rootElement = document.body;
 		}
-		
-		var component = rootElement.tesujiComponent;
-		if(component) {
-			component.parentModel = parentModel;
-			component.updateModel(model);
-		}
-		else {
-			component = new this.Component.FixedComponent(rootElement);
-			component.parentModel = parentModel;
-			component.setModel(model);
-		}
+
+		var component = rootElement.tesujiComponent || new this.Component.FixedComponent(rootElement);
+		component.parentModel = parentModel;
+		component.applyModel(model);
 		
 		return component;
 	},

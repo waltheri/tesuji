@@ -71,10 +71,10 @@ var createPropertyDescriptor = function(obj, key, parent) {
 		return descriptor;
 	}
 	else if(obj[key] instanceof ModelArray) {
-		/*context.subscription = function() {
+		context.subscription = function() {
 			parent.notify(key, obj[key]);
 		}
-		obj[key].subscribe(context.subscription);*/
+		obj[key].subscribe(context.subscription);
 		
 		context.value = obj[key];
 	}
@@ -101,10 +101,10 @@ var createPropertyDescriptor = function(obj, key, parent) {
 			if(context.subscription) context.value.unsubscribe(context.subscription);
 			
 			if(new_val instanceof ModelArray) {
-				/*context.subscription = function() {
+				context.subscription = function() {
 					parent.notify(key, new_val);
 				}
-				new_val.subscribe(context.subscription);*/
+				new_val.subscribe(context.subscription);
 				
 				context.value = new_val;
 			}

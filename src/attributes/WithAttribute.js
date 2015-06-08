@@ -4,12 +4,12 @@
 var ElementAttributeBinding = require("./ElementAttributeBinding");
 
 module.exports = ElementAttributeBinding.extend({
-	read: function(value) {
+	read: function(model) {
 		var tesuji = require("../tesuji.js");
 		
-		if(typeof value != "object") throw TypeError("Attribute data-with accepts objects or arrays, '"+(typeof value)+"' was given.");
+		if(typeof model != "object") throw TypeError("Attribute data-with accepts objects or arrays, '"+(typeof model)+"' was given.");
 		
-		tesuji.applyModel(this.context.domElement, value, this.context.model);
+		tesuji.applyModel(this.context.domElement, model, this.context.model);
 
 		this.context.stopTraversing();
 	},

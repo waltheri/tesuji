@@ -113,8 +113,9 @@ var Component = function Component() {
 	this.parentElement = null;
 	this.model = [];
 	this.templateNodes = [];
-	var parentModel = null;
+	this.built = false;
 	
+	var parentModel = null;
 	Object.defineProperty(this, "parentModel", {
 		get: function() {
 			return parentModel;
@@ -139,29 +140,39 @@ Component.prototype = {
 	 * Apply *initial* model on the template
 	 */
 	 
-	applyModel: function() {
-		if(this.model.length == 0) {
-			// no model item - don't render any HTML
-			this.parentElement.innerHTML = "";
-			this.templateNodes = [];
+	applyModel: function(model) {
+		model = model != null ? this.createModel(model) : this.model;
+		
+		if(this.built) {
+			this.updateModel(model);
 		}
 		else {
-			// first template copy already in the DOM
-			this.bindModel(0);
+			this.model = model;
 			
-			// multiple injections
-			for(var i = 1; i < this.model.length; i++) {
-				// for other instances we need to clone
-				this.cloneTemplateNodes();
-				this.bindModel(i);
+			if(this.model.length == 0) {
+				// no model item - don't render any HTML
+				this.parentElement.innerHTML = "";
+				this.templateNodes = [];
 			}
+			else {
+				// first template copy already in the DOM
+				this.bindModel(0);
+				
+				// multiple injections
+				for(var i = 1; i < this.model.length; i++) {
+					// for other instances we need to clone
+					this.cloneTemplateNodes();
+					this.bindModel(i);
+				}
+			}
+			
+			this.built = true;
 		}
 	},
 	
 	updateModel: function(newModel) {
 		var oldPos;
-		newModel = this.createModel(newModel);
-		
+
 		for(var i = 0; i < newModel.length; i++) {
 			oldPos = this.model.indexOf(newModel[i]);
 			
@@ -211,6 +222,12 @@ Component.prototype = {
 	
 	unbindModel: function(n) {
 		for(var i = 0; i < this.templateNodes[n].length; i++) removeModelFromDOMElement(this.templateNodes[n][i]);
+	},
+	
+	destroy: function() {
+		for(var i = 0; i < this.templateNodes.length; i++) {
+			this.unbindModel(i);
+		}
 	},
 	
 	/**
@@ -308,22 +325,41 @@ ImmutableComponent.prototype = Object.create(Component.prototype);
 ImmutableComponent.prototype.constructor = ImmutableComponent;
 
 /**
- * Inject component into the DOM element and produce output.
+ * Bind the component to the DOM element and produce output.
  */
 	 
-ImmutableComponent.prototype.inject = function(element) {
+ImmutableComponent.prototype.bind = function(element) {
 	// set parent element
 	this.parentElement = element;
 	this.parentElement.tesujiComponent = this;
 	
-	// fill element.innerHTML with the template
-	this.parentElement.innerHTML = this.template;
-	
-	// save template nodes
-	this.templateNodes.push(Array.prototype.slice.call(this.parentElement.childNodes));
-	
-	// apply model
-	this.applyModel();
+	if(this.built) {
+		// reinsert template nodes into parent element
+		for(var i = 0; i < this.templateNodes.length; i++) {
+			for(var j = 0; j < this.templateNodes[i].length; j++) {
+				this.parentElement.appendChild(this.templateNodes[i][j]);
+			}
+		}
+	}
+	else {
+		// fill element.innerHTML with the template
+		this.parentElement.innerHTML = this.template;
+		
+		// save template nodes
+		this.templateNodes.push(Array.prototype.slice.call(this.parentElement.childNodes));
+		
+		// apply model
+		this.applyModel();
+	}
+}
+
+/**
+ * Unbind the component from the DOM element.
+ */
+	 
+ImmutableComponent.prototype.unbind = function() {
+	this.parentElement.tesujiComponent = null;
+	this.parentElement = null;
 }
 
 /**
@@ -351,13 +387,6 @@ var FixedComponent = function FixedComponent(parentElement) {
 
 FixedComponent.prototype = Object.create(Component.prototype);
 FixedComponent.prototype.constructor = FixedComponent;
-
-FixedComponent.prototype.setModel = function(model) {
-	this.model = this.createModel(model);
-	
-	// and apply it
-	this.applyModel();
-}
 
 // registry of components
 Component.registry = {};
