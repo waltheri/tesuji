@@ -335,6 +335,8 @@ ImmutableComponent.prototype.bind = function(element) {
 	
 	if(this.built) {
 		// reinsert template nodes into parent element
+		this.parentElement.innerHTML = "";
+		
 		for(var i = 0; i < this.templateNodes.length; i++) {
 			for(var j = 0; j < this.templateNodes[i].length; j++) {
 				this.parentElement.appendChild(this.templateNodes[i][j]);
@@ -425,5 +427,6 @@ Component.fromHTML = function(template, name) {
 }
 
 Component.FixedComponent = FixedComponent;
+Component.empty = new (Component.fromHTML("", "Empty"))({});
 
 module.exports = Component;
