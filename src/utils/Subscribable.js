@@ -67,9 +67,9 @@ Subscribable.prototype = {
 	 */
 	 
 	notify: function(property, val) {
-		if(val == null) {
+		if(val === undefined) {
 			// if second argument is missing, use property as value
-			val = (property == null) ? this : property;
+			val = (property === undefined) ? this : property;
 			property = "__all__";
 		}
 		

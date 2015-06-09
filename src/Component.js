@@ -427,6 +427,6 @@ Component.fromHTML = function(template, name) {
 }
 
 Component.FixedComponent = FixedComponent;
-Component.empty = new (Component.fromHTML("", "Empty"))({});
+Component.Empty = Component.fromHTML("", "Empty");
 
 module.exports = Component;
