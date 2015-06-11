@@ -1,9 +1,7 @@
 /* index.js */
 
-//var Component = require("./Component");
-
 var tesuji = {
-	Component: require("./Component"),
+	bindComponent: require("./Component"),
 	Model: require("./Model"),
 	applyModel: function(rootElement, model, parentModel) {
 		// handle parameters
@@ -13,11 +11,7 @@ var tesuji = {
 			rootElement = document.body;
 		}
 
-		var component = rootElement.tesujiComponent || new this.Component.FixedComponent(rootElement);
-		component.parentModel = parentModel;
-		component.applyModel(model);
-		
-		return component;
+		this.bindComponent(rootElement, model, parentModel);
 	},
 	Type: require("./utils/Type")
 }

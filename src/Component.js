@@ -105,43 +105,204 @@ var removeModelFromDOMElement = function(domElement) {
 }
 
 /**
- * Abstract component class
- * Represents some component of the web page. It is composed from HTML template and data model.
+ * Immutable component class
+ *
+ * HTML template and model are immutable - they cannot be changed after the component is initialized.
+ *
+ * ImmutableComponent class itself is an abstract class - it doesn't contain any template. However, you can extended it with a template and create your own component class.
+ * Be aware that HTML template != HTML output, HTML output is HTML template enriched with the model data, and even it can be composed from multiple copies of the template. 
+ * So HTML output is mutable and depends on the model.
+ *
+ * Component objects contain method inject(?), which can be used to insert component into the DOM. And the component can be injected into any element any time.
  */
  
-var Component = function Component() {
-	this.parentElement = null;
-	this.model = [];
-	this.templateNodes = [];
-	this.built = false;
+/*var ImmutableComponent = function ImmutableComponent(model) {
+	Component.call(this);
+	this.model = this.createModel(model);
+}
+
+ImmutableComponent.prototype = Object.create(Component.prototype);
+ImmutableComponent.prototype.constructor = ImmutableComponent;*/
+
+/**
+ * Bind the component to the DOM element and produce output.
+ */
+	 
+/*ImmutableComponent.prototype.bind = function(element) {
+	// set parent element
+	this.parentElement = element;
+	this.parentElement.tesujiComponent = this;
 	
-	var parentModel = null;
-	Object.defineProperty(this, "parentModel", {
-		get: function() {
-			return parentModel;
-		},
-		set: function(v) {
-			parentModel = v;
+	if(this.built) {
+		// reinsert template nodes into parent element
+		this.parentElement.innerHTML = "";
+		
+		for(var i = 0; i < this.templateNodes.length; i++) {
+			for(var j = 0; j < this.templateNodes[i].length; j++) {
+				this.parentElement.appendChild(this.templateNodes[i][j]);
+			}
 		}
-	}); // temp fix
+	}
+	else {
+		// fill element.innerHTML with the template
+		this.parentElement.innerHTML = this.template;
+		
+		// save template nodes
+		this.templateNodes.push(Array.prototype.slice.call(this.parentElement.childNodes));
+		
+		// apply model
+		this.applyModel();
+	}
+}*/
+
+/**
+ * Unbind the component from the DOM element.
+ */
+	 
+/*ImmutableComponent.prototype.unbind = function() {
+	this.parentElement.tesujiComponent = null;
+	this.parentElement = null;
+}*/
+
+/**
+ * Binded component class
+ *
+ * It differs from the basic component in the fact, it doesn't contain its template. It uses HTML content of its parent DOM element as the template.
+ * Also it has mutable model - it can be changed. On the other side instance is strictly binded to its parent DOM element.
+ */
+ 
+/*var FixedComponent = function FixedComponent(parentElement) {
+	if(parentElement == null) throw new TypeError("Property 'parentElement' must not be null.");
+	
+	Component.call(this);
+	
+	// set parent element - it cannot be changed
+	this.parentElement = parentElement;
+	this.parentElement.tesujiComponent = this;
+	
+	// save template html
+	this.template = parentElement.innerHTML;
+	
+	// save template nodes
+	this.templateNodes.push(Array.prototype.slice.call(this.parentElement.childNodes));
+}
+
+FixedComponent.prototype = Object.create(Component.prototype);
+FixedComponent.prototype.constructor = FixedComponent;
+
+// registry of components
+Component.registry = {};*/
+
+/**
+ * Possible calls:
+ * 
+ * 1) component(String template[, String name, Function mappingFunction])
+ *    Predefine component - its instances can be injected into the DOM
+ *
+ * 2) component(DOMElement element, <Model> model)
+ *    create component 'on the fly' and fill it with the model
+ * 
+ * 3) component()
+ *    return Component class
+ */
+
+/*Component.fromHTML = function(template, name) {
+	if(typeof template != "string") {
+		throw new TypeError("Function 'Component.fromHTML' argument must be type of 'string'.");
+	}
+	
+	// create a subclass of the Component
+	name = name || "";
+	var NewComponent = new Function("ImmutableComponent", "return function "+name+"(model) { ImmutableComponent.call(this, model); };")(ImmutableComponent);
+
+	NewComponent.prototype = Object.create(ImmutableComponent.prototype);
+	NewComponent.prototype.constructor = NewComponent;
+	
+	// save its template
+	NewComponent.prototype.template = template;
+	
+	if(name) Component.registry[name] = NewComponent;
+	
+	return NewComponent;
+}
+
+Component.FixedComponent = FixedComponent;
+Component.Empty = Component.fromHTML("", "Empty");*/
+
+/** Enhanced component system */
+
+/**
+ * Component class
+ * It binds dynamic data to HTML element.
+ */
+ 
+var Component = function Component(domElement) {
+	this.domElement = domElement;
+	this.template = "";
+	this.templateNodes = [];
+	this.model = [];
+	this.parentModel = null;
+	this.built = false;
 }
 
 Component.prototype = {
 	constructor: Component,
-	template: "",
-	name: null,
-	_keepHot: true,
 	
-	createModel: function(model) {
-		return (model instanceof Array) ? model.slice() : [model];
+	/**
+	 * Sets a template of the component.
+	 *
+	 * Argument can be template string or null - current content of the element will be used as the template.
+	 */
+	
+	setTemplate: function(template) {
+		// unbind old models from old dom elements
+		this.unbindAll();
+		
+		if(template == null) {
+			// save template html
+			this.template = this.domElement.innerHTML;
+		}
+		else {
+			// set template string
+			this.template = template;
+		
+			// fill element.innerHTML with the template
+			this.domElement.innerHTML = template;
+		}
+		
+		// set built flag as false
+		this.built = false;
+		
+		// save template nodes
+		this.templateNodes = [Array.prototype.slice.call(this.domElement.childNodes)];
 	},
 	
+	/**
+     * Compares templates - needs to be optimalized in the future release
+	 */
+	
+	containsTemplate: function(template) {
+		return template == null || this.template == template;
+	},
+	
+	/**
+	 * Converts a model to supported form (array)
+	 */
+
+	prepareModel: function(model) {
+		return (model instanceof Array) ? model.slice() : [model];
+	},
+		
 	/**
 	 * Apply *initial* model on the template
 	 */
 	 
-	applyModel: function(model) {
-		model = model != null ? this.createModel(model) : this.model;
+	applyModel: function(model, parentModel) {
+		if(model == null) model = this.model;
+		
+		this.parentModel = parentModel; // CHANGING OF parentModel CURRENTLY NOT SUPPORTED
+		
+		model = this.prepareModel(model);
 		
 		if(this.built) {
 			this.updateModel(model);
@@ -151,7 +312,7 @@ Component.prototype = {
 			
 			if(this.model.length == 0) {
 				// no model item - don't render any HTML
-				this.parentElement.innerHTML = "";
+				this.domElement.innerHTML = "";
 				this.templateNodes = [];
 			}
 			else {
@@ -169,6 +330,10 @@ Component.prototype = {
 			this.built = true;
 		}
 	},
+	
+	/**
+	 * Private function - updates model
+	 */
 	
 	updateModel: function(newModel) {
 		var oldPos;
@@ -224,7 +389,7 @@ Component.prototype = {
 		for(var i = 0; i < this.templateNodes[n].length; i++) removeModelFromDOMElement(this.templateNodes[n][i]);
 	},
 	
-	destroy: function() {
+	unbindAll: function() {
 		for(var i = 0; i < this.templateNodes.length; i++) {
 			this.unbindModel(i);
 		}
@@ -237,10 +402,10 @@ Component.prototype = {
 	cloneTemplateNodes: function(position) {
 		if(!this.templateNodes[0]) {
 			// fill element.innerHTML with the template
-			this.parentElement.innerHTML = this.template;
+			this.domElement.innerHTML = this.template;
 			
 			// save template nodes
-			this.templateNodes.push(Array.prototype.slice.call(this.parentElement.childNodes));
+			this.templateNodes.push(Array.prototype.slice.call(this.domElement.childNodes));
 			
 			return;
 		}
@@ -252,7 +417,7 @@ Component.prototype = {
 			// insert at the end
 			for(var i = 0; i < templateNodes.length; i++) {
 				clonedNode = templateNodes[i].cloneNode(true);
-				this.parentElement.appendChild(clonedNode);
+				this.domElement.appendChild(clonedNode);
 				clonedNodes.push(clonedNode);
 			}
 			
@@ -262,7 +427,7 @@ Component.prototype = {
 			// insert at the position (before nodes of this.templateNodes[position])
 			for(var i = 0; i < templateNodes.length; i++) {
 				clonedNode = templateNodes[i].cloneNode(true);
-				this.parentElement.insertBefore(clonedNode, this.templateNodes[position][0]);
+				this.domElement.insertBefore(clonedNode, this.templateNodes[position][0]);
 				clonedNodes.push(clonedNode);
 			}
 			
@@ -282,7 +447,7 @@ Component.prototype = {
 		}
 		
 		for(var i = 0; i < templateNodes.length; i++) {
-			this.parentElement.removeChild(templateNodes[i]);
+			this.domElement.removeChild(templateNodes[i]);
 		}
 	},
 	
@@ -292,141 +457,41 @@ Component.prototype = {
 		
 		// insert at the position (before nodes of this.templateNodes[position])
 		for(var i = 0; i < templateNodes.length; i++) {
-			this.parentElement.insertBefore(templateNodes[i], this.templateNodes[to][0]);
+			this.domElement.insertBefore(templateNodes[i], this.templateNodes[to][0]);
 		}
 		
 		this.templateNodes.splice(from, 1);
 		this.templateNodes.splice(to, 0, templateNodes);
 	},
-	
-	__sleep: function() {
-		return ["model"];
-	}
+
 }
 
 /**
- * Immutable component class
- *
- * HTML template and model are immutable - they cannot be changed after the component is initialized.
- *
- * ImmutableComponent class itself is an abstract class - it doesn't contain any template. However, you can extended it with a template and create your own component class.
- * Be aware that HTML template != HTML output, HTML output is HTML template enriched with the model data, and even it can be composed from multiple copies of the template. 
- * So HTML output is mutable and depends on the model.
- *
- * Component objects contain method inject(?), which can be used to insert component into the DOM. And the component can be injected into any element any time.
+ * Binds component with DOM element (names should be renamed).
  */
- 
-var ImmutableComponent = function ImmutableComponent(model) {
-	Component.call(this);
-	this.model = this.createModel(model);
-}
 
-ImmutableComponent.prototype = Object.create(Component.prototype);
-ImmutableComponent.prototype.constructor = ImmutableComponent;
-
-/**
- * Bind the component to the DOM element and produce output.
- */
-	 
-ImmutableComponent.prototype.bind = function(element) {
-	// set parent element
-	this.parentElement = element;
-	this.parentElement.tesujiComponent = this;
-	
-	if(this.built) {
-		// reinsert template nodes into parent element
-		this.parentElement.innerHTML = "";
+var bindComponent = function(domElement, model, parentModel, template) {
+	if(domElement.tesujiComponent) {
+		// already binded element
 		
-		for(var i = 0; i < this.templateNodes.length; i++) {
-			for(var j = 0; j < this.templateNodes[i].length; j++) {
-				this.parentElement.appendChild(this.templateNodes[i][j]);
-			}
+		if(!domElement.tesujiComponent.containsTemplate(template)) {
+			// template is different, update it
+			domElement.tesujiComponent.setTemplate(template);
 		}
+		
+		// set model
+		domElement.tesujiComponent.applyModel(model, parentModel);
 	}
 	else {
-		// fill element.innerHTML with the template
-		this.parentElement.innerHTML = this.template;
+		// create HTMLElement binding
+		domElement.tesujiComponent = new Component(domElement);
 		
-		// save template nodes
-		this.templateNodes.push(Array.prototype.slice.call(this.parentElement.childNodes));
+		// set a template
+		domElement.tesujiComponent.setTemplate(template);
 		
-		// apply model
-		this.applyModel();
+		// and the model
+		domElement.tesujiComponent.applyModel(model, parentModel);
 	}
 }
-
-/**
- * Unbind the component from the DOM element.
- */
-	 
-ImmutableComponent.prototype.unbind = function() {
-	this.parentElement.tesujiComponent = null;
-	this.parentElement = null;
-}
-
-/**
- * Binded component class
- *
- * It differs from the basic component in the fact, it doesn't contain its template. It uses HTML content of its parent DOM element as the template.
- * Also it has mutable model - it can be changed. On the other side instance is strictly binded to its parent DOM element.
- */
  
-var FixedComponent = function FixedComponent(parentElement) {
-	if(parentElement == null) throw new TypeError("Property 'parentElement' must not be null.");
-	
-	Component.call(this);
-	
-	// set parent element - it cannot be changed
-	this.parentElement = parentElement;
-	this.parentElement.tesujiComponent = this;
-	
-	// save template html
-	this.template = parentElement.innerHTML;
-	
-	// save template nodes
-	this.templateNodes.push(Array.prototype.slice.call(this.parentElement.childNodes));
-}
-
-FixedComponent.prototype = Object.create(Component.prototype);
-FixedComponent.prototype.constructor = FixedComponent;
-
-// registry of components
-Component.registry = {};
-
-/**
- * Possible calls:
- * 
- * 1) component(String template[, String name, Function mappingFunction])
- *    Predefine component - its instances can be injected into the DOM
- *
- * 2) component(DOMElement element, <Model> model)
- *    create component 'on the fly' and fill it with the model
- * 
- * 3) component()
- *    return Component class
- */
-
-Component.fromHTML = function(template, name) {
-	if(typeof template != "string") {
-		throw new TypeError("Function 'Component.fromHTML' argument must be type of 'string'.");
-	}
-	
-	// create a subclass of the Component
-	name = name || "";
-	var NewComponent = new Function("ImmutableComponent", "return function "+name+"(model) { ImmutableComponent.call(this, model); };")(ImmutableComponent);
-
-	NewComponent.prototype = Object.create(ImmutableComponent.prototype);
-	NewComponent.prototype.constructor = NewComponent;
-	
-	// save its template
-	NewComponent.prototype.template = template;
-	
-	if(name) Component.registry[name] = NewComponent;
-	
-	return NewComponent;
-}
-
-Component.FixedComponent = FixedComponent;
-Component.Empty = Component.fromHTML("", "Empty");
-
-module.exports = Component;
+module.exports = bindComponent;

@@ -5,17 +5,8 @@ var ElementAttributeBinding = require("./ElementAttributeBinding");
 
 module.exports = ElementAttributeBinding.extend({
 	read: function(component) {
-		var Component = require("../Component");
-		
-		if(component == null) {
-			component = new Component.Empty({});
-		}
-		else if(!(component instanceof Component)) throw TypeError("Attribute data-component accepts instances of 'Component', instance of '"+(component.constructor && component.constructor.name ? component.constructor.name  : "[unknown]")+"' was given.");
-		
-		if(this.context.domElement.tesujiComponent) this.context.domElement.tesujiComponent.unbind();
-		
-		component.parentModel = this.context.model;
-		component.bind(this.context.domElement);
+		var bindComponent = require("../Component.js");
+		bindComponent(this.context.domElement, component.model, this.context.model, component.template);
 		
 		this.context.stopTraversing();
 	},
