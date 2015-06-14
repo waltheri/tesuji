@@ -162,7 +162,20 @@ var Model = makeModelClass(Object, function Model(source) {
 	// init model
 	initObservableInstance.call(this, source);
 	
+	if(!Model.dontInit && this.__init) this.__init();
 });
+
+Model.prototype.__sleep = function() {
+	var arg = {};
+	
+	for(var key in this) {
+		if(this.hasOwnProperty(key)) arg[key] = this[key];
+	}
+	
+	return {
+		arg: arg
+	}
+}
 
 /* Model Array */
 var ModelArray = makeModelClass(Array, function ModelArray(source) {
@@ -191,10 +204,19 @@ for(var i = 0; i < arrayAlteringMethods.length; i++) {
 	ModelArray.prototype[arrayAlteringMethods[i]] = alteredArrayMethod(arrayAlteringMethods[i]);
 }
 
-ModelArray.prototype.constructor = ModelArray;
+ModelArray.prototype.__sleep = function() {
+	return {
+		arg: this.slice()
+	}
+}
 
 // registry of models
-Model.registry = {};
+Model.registry = {
+	Model: Model,
+	ModelArray: ModelArray
+};
+
+Model.dontInit = false;
 
 Model.Array = ModelArray;
 Model.extend = function(constructor) {
@@ -202,6 +224,7 @@ Model.extend = function(constructor) {
 	
 	submodel.prototype = Object.create(Model.prototype);
 	submodel.prototype.constructor = submodel;
+	submodel.prototype.__sleep = null;
 	
 	if(constructor.name) Model.registry[constructor.name] = submodel;
 	
@@ -210,6 +233,11 @@ Model.extend = function(constructor) {
 
 Model.computed = function(readFn, writeFn, context) {
 	return new Computed(readFn, writeFn, context);
+}
+
+// autoloader function of model
+Model.load = function(model) {
+	// it does nothing - need to be overriden
 }
 
 // export it

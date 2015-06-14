@@ -5,6 +5,8 @@ var assert = require('chai').assert;
 
 var Model = require('../src/Model');
 var events = require('../src/utils/events');
+var serialize = require('../src/utils/serialize');
+var unserialize = require('../src/utils/unserialize');
 var typeOf = require('../src/utils/Type').typeOf;
 
 var genericTest = function(barFunction) {
@@ -148,7 +150,7 @@ var genericTest = function(barFunction) {
 	}
 }
 
-describe('observableObject', function() {
+describe('Model', function() {
 	describe('(1) object instance', genericTest(function() {
 		return new Model({
 			a: 10,
@@ -163,7 +165,7 @@ describe('observableObject', function() {
 	}));
 	
 	describe('(2) object instance advanced', function() {
-		it('Observing of custom class instance.', function() {
+		/*it('Observing of custom class instance.', function() {
 			var Cls = function() {
 				this.a = 10;
 			}
@@ -188,7 +190,7 @@ describe('observableObject', function() {
 			foo.fn(100);
 			assert(t === true);
 			assert(foo.a === 100);
-		});
+		});*/
 	});
 	
 	describe('(3) class', genericTest(function() {
@@ -210,18 +212,26 @@ describe('observableObject', function() {
 		var Parent, Child, instance;
 		
 		beforeEach(function() {
-			Parent = function(x, y, z) {
+			Parent = Model.extend(function(x, y, z) {
 				this.set(x, y);
 				this.z = z;
-			}
+			});
+			
 			Parent.prototype.set = function(x, y) {
 				this.x = x;
 				this.y = y;
 			}
+			
 			Parent.prototype.get = function() {
 				return this.z
 			}
-			Child = Model.extend(Parent);
+			
+			Child = function(x,y,z) {
+				Parent.call(this, x, y, z);
+			}
+			Child.prototype = Object.create(Parent.prototype);
+			Child.prototype.constructor = Child;
+			
 			instance = new Child(10, "Hello", {val: 20});
 		});
 		
@@ -240,33 +250,6 @@ describe('observableObject', function() {
 			instance.set(20, "World");
 			assert(instance.x === 20);
 			assert(instance.y === "World");
-		});
-		
-		it('Nested classes also work', function() {
-			var Parent2 = function(z) {
-				this.z = z;
-				this.a = ":-)";
-				this.set(10, 20);
-			}
-			Parent2.prototype = Object.create(Parent.prototype);
-			Parent2.prototype.special = function() {
-				
-			}
-			
-			var Child2 = Model.extend(Parent2);
-			var instance2 = new Child2(100);
-			
-			assert.instanceOf(instance2, Child2);
-			assert.instanceOf(instance2, Parent2);
-			assert.instanceOf(instance2, Parent);
-			assert(Object.keys(instance2).length == 4);
-			
-			assert(instance2.a === ":-)");
-			assert(instance2.x === 10);
-			assert(instance2.y === 20);
-			assert.deepEqual(instance2.get(), 100);
-			
-			instance2.special();
 		});
 	});
 	
@@ -409,5 +392,144 @@ describe('observableObject', function() {
 			assert(t1 === false);
 			assert(t2 === true);
 		});
+	});
+	
+	describe('(7) Serialize', function() {
+		var modelSimple, modelArray, MyModel;
+		
+		beforeEach(function() {
+			modelSimple = new Model({
+				str: "Hello",
+				number: 1052.8754,
+				obj: {
+					val: null
+				},
+				bool: true
+			});
+			
+			modelArray = new Model.Array([
+				{val: 0},
+				{val: "Hello"},
+				{val: null},
+				{val: function(a) {
+					console.log(a);
+				}}
+			]);
+			
+			MyModel = Model.extend(function MyModel() {
+				this.normal = null;
+				this.str = typeOf(String, "Hello");
+				this.computed = Model.computed(function(){
+					return 10;
+				});
+				this.modelSimple = modelSimple;
+				this.modelArray = modelArray;
+			})
+			
+			MyModel.prototype.foo = function(par) {
+				this.normal = par;
+			}
+		});
+		
+		it('Serialization of standard model', function() {
+			modelSimple.number = 45754.45474;
+			
+			var serialization = serialize(modelSimple);
+			var copy = unserialize(serialization);
+			
+			assert(copy.constructor === modelSimple.constructor);
+			assert.deepEqual(modelSimple, copy);
+		});
+		
+		it('Serialization of array model', function() {
+			modelArray.push({val: true});
+			
+			var serialization = serialize(modelArray);
+			var copy = unserialize(serialization);
+
+			assert.instanceOf(copy, Array);
+			assert(modelArray.constructor === copy.constructor);
+			assert(modelArray.length === copy.length);
+			assert(modelArray[0].val === copy[0].val);
+			assert(modelArray[1].val === copy[1].val);
+			assert(modelArray[2].val === copy[2].val);
+			assert(modelArray[3].val.toString() === copy[3].val.toString());
+			assert(modelArray[4].val === copy[4].val);
+		});
+		
+		it('Serialization of extended model', function(){
+			var model = new MyModel();
+			
+			model.foo("bar");
+			
+			var serialization = serialize(model, 2);
+			var copy = unserialize(serialization);
+
+			assert.instanceOf(model, Model);
+			assert(model.constructor === copy.constructor);
+			assert(model.normal === copy.normal);
+			assert(model.str === copy.str);
+			assert(model.computed === copy.computed);
+			assert(model.modelArray.length === copy.modelArray.length);
+			assert.deepEqual(model.modelSimple, copy.modelSimple);
+			
+			copy.foo("foo");
+			assert(copy.normal === "foo");
+			
+			copy.computed = 1000;
+			assert(copy.computed === 10);
+			
+			copy.str = "World!";
+			assert(copy.str === "World!");
+			
+			assert.throws(function(){
+				copy.str = 123;
+			}, TypeError);
+		});
+		
+		it('Autoloading of model', function(){
+			Model.load = function(model) {
+				if(model === "Foo") {
+					return Model.extend(function Foo() {
+						this.a = 10;
+						this.b = Model.computed(function(){
+							return "barbar";
+						});
+					});
+				}
+			}
+			
+			var json = {
+				constructor: "Foo",
+				value: {
+					a: 20
+				}
+			}
+			
+			var copy = unserialize(JSON.stringify(json));
+			
+			assert(copy.constructor.name = "Foo");
+			assert(copy.a === 20);
+			assert(copy.b === "barbar");
+		});
+		
+		it('Model.prototype.__init()', function(){
+			MyModel.prototype.__init = function() {
+				this.foo("Foo");
+			}
+			
+			var model = new MyModel();
+			assert(model.normal === "Foo");
+			
+			model.foo("Bar");
+			assert(model.normal === "Bar");
+			
+			var serialization = serialize(model, 2);
+			var copy = unserialize(serialization);
+			
+			assert(copy.normal === "Bar");
+		});
+		
+		it('Model.prototype.__sleep()');
 	});
 });
