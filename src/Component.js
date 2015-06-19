@@ -410,7 +410,7 @@ Component.prototype = {
 			return;
 		}
 		
-		var clonedNode, clonedNodes = [];
+		/*var clonedNode, clonedNodes = [];
 		var templateNodes = this.templateNodes[0]; // need to be changed, because this.templateNodes[0] doesn't have to exist.
 		
 		if(position == null || position == this.templateNodes.length) {
@@ -432,6 +432,28 @@ Component.prototype = {
 			}
 			
 			this.templateNodes.splice(position, 0, clonedNodes);
+		}*/
+		
+		var dummyWrapper = document.createElement("div");
+		dummyWrapper.innerHTML = this.template;
+		
+		var templateNodes = Array.prototype.slice.call(dummyWrapper.childNodes);
+		
+		if(position == null || position == this.templateNodes.length) {
+			// insert at the end
+			for(var i = 0; i < templateNodes.length; i++) {
+				this.domElement.appendChild(templateNodes[i]);
+			}
+			
+			this.templateNodes.push(templateNodes);
+		}
+		else {
+			// insert at the position (before nodes of this.templateNodes[position])
+			for(var i = 0; i < templateNodes.length; i++) {
+				this.domElement.insertBefore(templateNodes[i], this.templateNodes[position][0]);
+			}
+			
+			this.templateNodes.splice(position, 0, templateNodes);
 		}
 	},
 	
