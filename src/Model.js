@@ -184,6 +184,8 @@ var ModelArray = makeModelClass(Array, function ModelArray(source) {
 	
 	this.length = 0;
 	
+	source = source || [];
+	
 	for(var i = 0; i < source.length; i++) {
 		// use old method for initialization
 		Array.prototype.push.call(this, source[i]);
