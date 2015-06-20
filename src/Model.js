@@ -70,7 +70,7 @@ var createPropertyDescriptor = function(obj, key, parent) {
 		
 		return descriptor;
 	}
-	else if(obj[key] instanceof ModelArray) {
+	else if(obj[key] && typeof obj[key].subscribe == "function" && typeof obj[key].unsubscribe == "function") {
 		context.subscription = function() {
 			parent.notify(key, obj[key]);
 		}
@@ -100,7 +100,7 @@ var createPropertyDescriptor = function(obj, key, parent) {
 			
 			if(context.subscription) context.value.unsubscribe(context.subscription);
 			
-			if(new_val instanceof ModelArray) {
+			if(new_val && typeof new_val.subscribe == "function" && typeof new_val.unsubscribe == "function") {
 				context.subscription = function() {
 					parent.notify(key, new_val);
 				}
