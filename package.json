@@ -1,6 +1,6 @@
 {
   "name": "tesuji",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Javascript MV* library with magical data bindings designed to be used with Webpack or Browserify.",
   "main": "src/tesuji.js",
   "scripts": {

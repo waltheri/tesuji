@@ -42,6 +42,8 @@ var unserialize_rec = function(obj) {
 			}		
 		}
 		
+		if(typeof temp.__wakeup == "function") temp.__wakeup();
+		
 		return temp;
 	}
 	else {

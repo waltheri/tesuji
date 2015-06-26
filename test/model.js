@@ -1,5 +1,7 @@
 /** Tests of observables. */
 
+// # mocha -R spec
+
 var chai = require("chai");
 var assert = require('chai').assert;
 
@@ -530,6 +532,46 @@ describe('Model', function() {
 			assert(copy.normal === "Bar");
 		});
 		
-		it('Model.prototype.__sleep()');
+		it('Model.prototype.__sleep() and __wakeup()', function(){
+			var Foo = Model.extend(function Foo(arg) {
+				this.bar = Model.computed(function(){
+					return arg;
+				});
+				
+				this.baz = "a";
+				this.bax = null;
+			});
+			
+			Foo.prototype.__init = function() {
+				var t = "";
+				for(var i = 0; i < this.bar; i++) t += this.baz;
+				this.bax = t;
+			}
+			
+			Foo.prototype.__sleep = function() {
+				return {
+					arg: this.bar,
+					keys: ["baz"]
+				}
+			}
+			
+			Foo.prototype.__wakeup = function() {
+				var t = "";
+				for(var i = 0; i < this.bar; i++) t += this.baz;
+				this.bax = t;
+			}
+			
+			var foo = new Foo(10);
+			
+			assert(foo.bax == "aaaaaaaaaa");
+			
+			foo.baz = "b";
+			
+			var serialization = serialize(foo);
+			var copy = unserialize(serialization);
+			
+			assert(copy.bar == 10);
+			assert(copy.bax == "bbbbbbbbbb");
+		});
 	});
 });
