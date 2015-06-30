@@ -229,6 +229,58 @@ Component.registry = {};*/
 Component.FixedComponent = FixedComponent;
 Component.Empty = Component.fromHTML("", "Empty");*/
 
+// jQuery.html()
+var rxhtmlTag = /<(?!area|br|col|embed|hr|img|input|link|meta|param)(([\w:]+)[^>]*)\/>/gi;
+var rtagName = /<([\w:]+)/;
+var rnoInnerhtml = /<(?:script|style|link)/i;
+var wrapMap = {
+	// Support: IE9
+	option: [1, "<select multiple='multiple'>", "</select>"],
+
+	thead: [1, "<table>", "</table>" ],
+	col: [2, "<table><colgroup>", "</colgroup></table>"],
+	tr: [2, "<table><tbody>", "</tbody></table>"],
+	td: [3, "<table><tbody><tr>", "</tr></tbody></table>"],
+
+	_default: [ 0, "", "" ]
+};
+
+var htmlToElem = function(elem, html) {
+	
+	// See if we can take a shortcut and just use innerHTML
+	if(!rnoInnerhtml.test(html) && !wrapMap[(rtagName.exec(html) || ["", ""])[1].toLowerCase()]) {
+		html = html.replace(rxhtmlTag, "<$1></$2>");
+		try {
+			elem.innerHTML = html;
+			elem = 0;
+
+		// If using innerHTML throws an exception, use the fallback method
+		} catch(e) {}
+	}
+	
+	if(elem) {		
+		var tmp = document.createElement("div");
+
+		// Deserialize a standard representation
+		var tag = (rtagName.exec(html) || ["", ""])[1].toLowerCase();
+		var wrap = wrapMap[tag] || wrapMap._default;
+		
+		tmp.innerHTML = wrap[1] + html.replace(rxhtmlTag, "<$1></$2>") + wrap[2];
+
+		// Descend through wrappers to the right content
+		var i = wrap[0];
+		while(i--) {
+			tmp = tmp.lastChild;
+		}
+		
+		elem.innerHTML = "";
+	
+		while(tmp.childNodes.length) {
+			elem.appendChild(tmp.childNodes[0]);
+		}
+	}
+}
+
 /** Enhanced component system */
 
 /**
@@ -267,7 +319,8 @@ Component.prototype = {
 			this.template = template;
 		
 			// fill element.innerHTML with the template
-			this.domElement.innerHTML = template;
+			//this.domElement.innerHTML = template;
+			htmlToElem(this.domElement, this.template);
 		}
 		
 		// set built flag as false
@@ -402,7 +455,8 @@ Component.prototype = {
 	cloneTemplateNodes: function(position) {
 		if(!this.templateNodes[0]) {
 			// fill element.innerHTML with the template
-			this.domElement.innerHTML = this.template;
+			//this.domElement.innerHTML = this.template;
+			htmlToElem(this.domElement, this.template);
 			
 			// save template nodes
 			this.templateNodes.push(Array.prototype.slice.call(this.domElement.childNodes));
@@ -435,7 +489,8 @@ Component.prototype = {
 		}*/
 		
 		var dummyWrapper = document.createElement("div");
-		dummyWrapper.innerHTML = this.template;
+		//dummyWrapper.innerHTML = this.template;
+		htmlToElem(dummyWrapper, this.template);
 		
 		var templateNodes = Array.prototype.slice.call(dummyWrapper.childNodes);
 		
