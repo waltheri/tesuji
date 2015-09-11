@@ -19,7 +19,7 @@ var off = function(evName, callback) {
 		}
 	}
 	else {
-		events.evName = undefined;
+		events[evName] = undefined;
 	}
 }
 

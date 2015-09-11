@@ -98,20 +98,19 @@ var createPropertyDescriptor = function(obj, key, parent) {
 			if(new_val == null && context.notNull) throw new TypeError("Trying to assign null to the property '"+key+"', but value of an observable property cannot be null (or undefined).");
 			if(context.condition != null) context.condition.test(new_val, key);
 			
-			if(context.subscription) context.value.unsubscribe(context.subscription);
+			if(context.subscription) {
+				context.value.unsubscribe(context.subscription);
+				context.subscription = null;
+			}
 			
 			if(new_val && typeof new_val.subscribe == "function" && typeof new_val.unsubscribe == "function") {
 				context.subscription = function() {
 					parent.notify(key, new_val);
 				}
 				new_val.subscribe(context.subscription);
-				
-				context.value = new_val;
 			}
-			else {
-				context.value = new_val
-			}
-
+			
+			context.value = new_val;
 			deepFreeze(context.value);
 
 			parent.notify(key, new_val);
