@@ -10,6 +10,7 @@ var attributeHandlers = [
 	require("./TemplateAttribute"),
 	require("./ValueAttribute"),
 	require("./CheckedAttribute"),
+	require("./DisabledAttribute"),
 	require("./EventsAttribute"),
 	require("./IfAttribute"),
 	require("./AttrAttribute"),
