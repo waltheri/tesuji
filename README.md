@@ -1,7 +1,17 @@
 # tesuji.js
 Javascript MV* library with magical data bindings designed to be used with Webpack or Browserify.
 
-Currently in development - anything is about to change.
+**In development - anything is about to change.**
+
+## Install
+
+Currently there isn't a compiled version of the library. You need to have [node.js](https://nodejs.org/en/download/) installed.
+
+```
+npm install tesuji
+```
+
+However this version is ready to be used with Webpack and Browserify.
 
 ## Example
 
@@ -12,7 +22,6 @@ File *main.js*:
 ```javascript
 var tesuji = require("tesuji");
 var Model = tesuji.Model;
-var Component = tesuji.Component;
 
 // create model class
 var MyModel = Model.extend(function(title, text) {
@@ -25,12 +34,12 @@ MyModel.prototype.changeText = function(newText) {
 	this.text = newText;
 }
 
-// create reusable component
-var MyComponent = Component.fromHTML(require("./template.html"));
-
 // define main page model
 var pageModel = new Model({
-	content: new MyComponent(new myModel("Hello World", "This is tesuji.js web app."));
+	content: {
+		template: require("./template.html"),
+		model: new myModel("Hello World", "This is tesuji.js web app.")
+	}
 });
 
 // apply main model
