@@ -547,7 +547,7 @@ Component.prototype = {
  * Binds component with DOM element (names should be renamed).
  */
 
-var bindComponent = function(domElement, model, parentModel, template) {
+Component.bind = function(domElement, model, parentModel, template) {
 	if(domElement.tesujiComponent) {
 		// already binded element
 		
@@ -571,4 +571,4 @@ var bindComponent = function(domElement, model, parentModel, template) {
 	}
 }
  
-module.exports = bindComponent;
+module.exports = Component;
