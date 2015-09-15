@@ -2,8 +2,8 @@
 
 /* MODEL dump */
 
-var Model = require("./Model");
-var Observer = require("./utils/Observer");
+var Model = require("../Model");
+var Observer = require("../utils/Observer");
 var ModelArray = Model.Array;
 
 var property = function(key) {
@@ -82,7 +82,7 @@ formatters["object"] = function(val, stack, details) {
 	
 	stack.push(val);
 	
-	output += objectClass("Object");
+	output += objectClass((val.constructor && val.constructor.name) ? val.constructor.name : "Object");
 	output += propertyList(val, stack, false, details);
 	
 	stack.pop();
@@ -91,27 +91,33 @@ formatters["object"] = function(val, stack, details) {
 }
 
 var propertyItem = function(key, val, stack, details) {
+	var pre = "";
+	if(key != null) pre += property(key)+": ";
+	
 	if(stack.indexOf(val) >= 0) {
 		// circular
-		return property(key)+": [recursion]";
+		return  pre+"[recursion]";
 	}
 	else if(val == null) {
-		return property(key)+": "+formatters["boolean"](val);
+		return pre+formatters["boolean"](val);
 	}
 	else if(val.dump != null) {
-		return ''+property(key)+": "+val.dump(stack, details)+'';
+		return pre+val.dump(stack, details)+'';
 	}
 	else if(val instanceof HTMLElement) {
-		return property(key)+": "+htmlElement(val);
+		return pre+htmlElement(val);
+	}
+	else if(val instanceof Node || val == window) {
+		return pre+objectClass(val.constructor.name);
 	}
 	else if(val instanceof Array) {
-		return property(key)+": "+array(val, stack, details);
+		return pre+array(val, stack, details);
 	}
 	else if(formatters[typeof val]) {
-		return property(key)+": "+formatters[typeof val](val, stack, details);
+		return pre+formatters[typeof val](val, stack, details);
 	}
 	else {
-		return property(key)+": "+val+"";
+		return pre+val;
 	}
 }
 
@@ -153,7 +159,7 @@ Model.prototype.dump = function(stack, details) {
 	
 	stack.push(this);
 	
-	output += objectClass("Model");
+	output += objectClass(this.constructor.name || "Model");
 	output += '<ul class="tesuji-dump-list">'
 	
 	for(var key in this) {
@@ -216,12 +222,17 @@ Observer.prototype.dump = function() {
 	return output;
 }
 
+var styles = '/* debug CSS */.tesuji-dump {font-family: monospace;}.tesuji-dump > .tesuji-class {font-size: 120%;margin-left: 5px;}.tesuji-dump-list {list-style-type: none;padding-left: 20px;margin: 0;}.tesuji-dump-dependency, .tesuji-dump-list {cursor: auto;} .tesuji-dump-list li:hover {background-color: rgba(0,0,0,0.025);}li.tesuji-has-children {cursor: pointer;}.tesuji-has-children > .tesuji-dump-list, .tesuji-has-children > .tesuji-dump-dependency {display: none;}.tesuji-open > .tesuji-dump-list, .tesuji-open > .tesuji-dump-dependency {display: block;}.tesuji-has-children::before {content: "";width: 0; height: 0; border-top: 5px solid transparent;border-bottom: 5px solid transparent;/*border-right: 5px solid transparent;*/border-left: 5px solid #999;display: inline-block;margin-right: 7px;margin-left: -12px;}.tesuji-has-children.tesuji-open::before {border-top: 5px solid #999;border-bottom: none;border-right: 5px solid transparent;border-left: 5px solid transparent;margin-right: 5px;margin-left: -15px;}.tesuji-dump-dependency, .tesuji-notown {opacity: 0.70;} .tesuji-dump-dependency::before {float: right;content: "Observers";font-size: 10px;padding-left: 5px;padding-right: 2px;border-bottom-left-radius: 4px;opacity: 0.5;}.tesuji-property {color: #990099;}.tesuji-class {font-style: italic;}.tesuji-number, .tesuji-boolean {color: blue;}.tesuji-string {color: #BB0000;}.tesuji-dump-list a {color: #000099;}';
 
-window.addEventListener("DOMContentLoaded", function(){
-	var link = document.createElement("link");
+window.addEventListener("DOMContentLoaded", function() {
+	/*var link = document.createElement("link");
 	link.rel = "stylesheet";
-	link.href = "../src/debug.css";
-	document.head.appendChild(link);
+	link.href = "../src/dev-tools/debug.css";
+	document.head.appendChild(link);*/
+	
+	var style = document.createElement("style");
+	style.textContent = styles;
+	document.head.appendChild(style);
 	
 	document.addEventListener("click", function(e){
 		var elem = e.target;
@@ -239,9 +250,9 @@ window.addEventListener("DOMContentLoaded", function(){
 
 /* COMPONENT dump */
 
-var Component = require("./Component");
-var ElementAttributeBinding = require("./attributes/ElementAttributeBinding");
-var WithAttribute = require("./attributes/WithAttribute");
+var Component = require("../Component");
+var ElementAttributeBinding = require("../attributes/ElementAttributeBinding");
+var WithAttribute = require("../attributes/WithAttribute");
 
 var htmlElementBindings = function(elem, stack) {
 	var bindings = false, temp, output = "";
@@ -451,4 +462,10 @@ WithAttribute.prototype.dump = function(stack) {
 	}
 	
 	return output;
+}
+
+module.exports = {
+	dump: function(obj) {
+		return '<div class="tesuji-dump">'+propertyItem(null, obj, [null])+'</div>';
+	}
 }
